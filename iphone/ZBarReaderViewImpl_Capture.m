@@ -29,7 +29,7 @@
 
 #define MODULE ZBarReaderView
 #import "debug.h"
-
+#define tryCountMax  100
 // protected APIs
 @interface ZBarReaderView()
 - (void) _initWithImageScanner: (ZBarImageScanner*) _scanner;
@@ -45,6 +45,9 @@
     AVCaptureSession *session;
     AVCaptureDevice *device;
     AVCaptureInput *input;
+    int tryCount;
+    CGFloat effectiveScale;
+    int scanCount;
 }
 
 @end
@@ -56,7 +59,7 @@
 - (void) _initWithImageScanner: (ZBarImageScanner*) scanner
 {
     [super _initWithImageScanner: scanner];
-
+    effectiveScale = 1.0;
     session = [AVCaptureSession new];
     NSNotificationCenter *notify =
         [NSNotificationCenter defaultCenter];
@@ -360,6 +363,75 @@
 {
     [self didTrackSymbols: syms];
 }
+
+- (void) captureReader: (ZBarCaptureReader*) captureReader
+    resiveTrackSymbols: (ZBarSymbolSet*) symbols{
+    scanCount++;
+    tryCount ++;
+    
+    
+    if(scanCount <1000){
+        if( tryCount == tryCountMax){
+            [self setVideoScale:1];
+        }else if (tryCount >tryCountMax){
+            tryCount = 0;
+        }
+        
+    }else{
+        tryCount = 0;
+        effectiveScale = 0;
+        scanCount = 0;
+        [device lockForConfiguration:nil];
+        [self.device rampToVideoZoomFactor:1 withRate:100];
+        [device unlockForConfiguration];
+    }
+    
+}
+
+- (void) setVideoScale:(CGFloat)scale {
+    
+    if (effectiveScale < 1.0 ) {
+        effectiveScale = 1.0;
+    }
+    
+    if (effectiveScale > self.device.activeFormat.videoMaxZoomFactor) {
+        effectiveScale = self.device.activeFormat.videoMaxZoomFactor;
+    }
+    
+    [device lockForConfiguration:nil];
+    
+    float ZoomFactor = self.device.activeFormat.videoMaxZoomFactor;
+    effectiveScale = scale + effectiveScale;
+    if (effectiveScale < ZoomFactor && effectiveScale <3){
+        //        if self._isScale {z
+        //            self._isScale = false
+        
+        
+        
+        //            delay(1, closure: {
+        //                self._isScale = true
+        //            })
+        // self.device.ramp(toVideoZoomFactor: self._effectiveScale, withRate: 100);
+        
+        //        if (effectiveScale < 2){
+        //            [self.device rampToVideoZoomFactor:effectiveScale withRate:100];
+        //        }else{
+        //            effectiveScale = 2;
+        [self.device rampToVideoZoomFactor:effectiveScale withRate:100];
+        //        }
+        
+        
+        //        }
+    }else{
+        scanCount == 0;
+        effectiveScale = 0;
+        tryCount = 0;
+        [self.device rampToVideoZoomFactor:1 withRate:100];
+    }
+    [device unlockForConfiguration];
+    
+}
+
 
 - (void)       captureReader: (ZBarCaptureReader*) reader
   didReadNewSymbolsFromImage: (ZBarImage*) zimg

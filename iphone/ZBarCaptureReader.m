@@ -248,7 +248,9 @@ enum {
     uint32_t _state = OSAtomicOr32Barrier(0, &state);
     if((_state & (PAUSED | RUNNING)) != RUNNING)
         return;
-
+//    if (self.captureDelegate != nil){
+        [self.captureDelegate captureReader:self resiveTrackSymbols:nil];
+//    }
     NSAutoreleasePool *pool = [NSAutoreleasePool new];
     image.sequence = framecnt++;
 

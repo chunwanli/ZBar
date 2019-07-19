@@ -40,7 +40,8 @@
 // when good barcodes are detected
 - (void) captureReader: (ZBarCaptureReader*) captureReader
        didTrackSymbols: (ZBarSymbolSet*) symbols;
-
+- (void) captureReader: (ZBarCaptureReader*) captureReader
+    resiveTrackSymbols: (ZBarSymbolSet*) symbols;
 @end
 
 @interface ZBarCaptureReader
